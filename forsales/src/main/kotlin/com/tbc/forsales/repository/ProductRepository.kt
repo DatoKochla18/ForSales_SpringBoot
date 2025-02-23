@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 
 interface ProductRepository : JpaRepository<Product, Long> {
 
@@ -18,4 +19,13 @@ interface ProductRepository : JpaRepository<Product, Long> {
     fun findLowestPricedProducts(pageable: Pageable): Page<Product>
 
     fun findByProductId(productId: Int): List<Product>
+
+    @Query(
+        """
+    SELECT p FROM Product p 
+    WHERE LOWER(p.productName) LIKE LOWER(CONCAT('%', :name, '%'))
+    """
+    )
+    fun searchProductsByName(@Param("name") name: String, pageable: Pageable): Page<Product>
+
 }
