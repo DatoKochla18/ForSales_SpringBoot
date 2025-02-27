@@ -14,18 +14,18 @@ interface ProductRepository : JpaRepository<Product, Long> {
         SELECT p FROM Product p WHERE p.productPrice = (
             SELECT MIN(p2.productPrice) FROM Product p2 WHERE p2.productId = p.productId
         )
-    """
+        AND (:category IS NULL OR p.productCategory = :category)
+        AND (:search IS NULL OR p.productName LIKE CONCAT('%', :search, '%'))
+        """
     )
-    fun findLowestPricedProducts(pageable: Pageable): Page<Product>
-
+    fun findLowestPricedProducts(
+        @Param("category") category: String?,
+        @Param("search") search: String?,
+        pageable: Pageable
+    ): Page<Product>
     fun findByProductId(productId: Int): List<Product>
 
-    @Query(
-        """
-    SELECT p FROM Product p 
-    WHERE LOWER(p.productName) LIKE LOWER(CONCAT('%', :name, '%'))
-    """
-    )
-    fun searchProductsByName(@Param("name") name: String, pageable: Pageable): Page<Product>
+    @Query("SELECT p FROM Product p WHERE p.productId IN :productIds")
+    fun findByProductIds(@Param("productIds") productIds: List<Long>): List<Product>
 
 }

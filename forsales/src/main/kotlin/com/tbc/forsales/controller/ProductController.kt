@@ -2,9 +2,8 @@ package com.tbc.forsales.controller
 
 import com.tbc.forsales.model.Product
 import com.tbc.forsales.service.ProductService
-import com.tbc.forsales.utils.PageProductSearchResponse
+import com.tbc.forsales.utils.FavouriteProduct
 import com.tbc.forsales.utils.PagedProductResponse
-import com.tbc.forsales.utils.ProductResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -15,9 +14,11 @@ class ProductController(private val productService: ProductService) {
     @GetMapping("/lowest_priced")
     fun getLowestPricedProducts(
         @RequestParam(defaultValue = "1") page: Int,
-        @RequestParam(defaultValue = "20") perPage: Int
+        @RequestParam(defaultValue = "20") perPage: Int,
+        @RequestParam(required = false) search: String?,
+        @RequestParam(required = false) category: String?
     ): PagedProductResponse {
-        return productService.getLowestPricedProducts(page, perPage)
+        return productService.getLowestPricedProducts(page, perPage, search, category)
     }
 
     @GetMapping("/{productId}")
@@ -30,13 +31,12 @@ class ProductController(private val productService: ProductService) {
         }
     }
 
-    @GetMapping("/search")
-    fun searchProducts(
-        @RequestParam query: String,
-        @RequestParam(defaultValue = "1") page: Int,
-        @RequestParam(defaultValue = "20") perPage: Int
-    ): PageProductSearchResponse {
-        return productService.searchProducts(query, page, perPage)
+
+    @GetMapping("/favourite")
+    fun getFavouriteProducts(@RequestParam("ids") ids: String): List<FavouriteProduct> {
+        val productIds = ids.replace("%2C", ",").split(",").map { it.trim().toLong() }
+        return productService.getFavouriteProducts(productIds)
     }
+
 }
 

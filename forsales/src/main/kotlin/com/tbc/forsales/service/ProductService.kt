@@ -13,11 +13,11 @@ class ProductService(private val productRepository: ProductRepository) {
         private val logger = LoggerFactory.getLogger(ProductService::class.java)
     }
 
-    fun getLowestPricedProducts(page: Int, perPage: Int): PagedProductResponse {
-        val pageable = PageRequest.of(page - 1, perPage) // PageRequest is 0-based
-        val productPage = productRepository.findLowestPricedProducts(pageable)
+    fun getLowestPricedProducts(page: Int, perPage: Int, search: String?, category: String?): PagedProductResponse {
+        val pageable = PageRequest.of(page - 1, perPage)
+        val productPage = productRepository.findLowestPricedProducts(category, search, pageable)
 
-        logger.info("Found ${productPage.totalElements} products")
+        logger.info("Found ${productPage.totalElements} products with filters: search=$search, category=$category")
 
         val groupedProducts = productPage.content.groupBy { it.productId }
             .map { (_, productList) ->
@@ -43,43 +43,31 @@ class ProductService(private val productRepository: ProductRepository) {
             data = groupedProducts
         )
     }
-
     fun getProductsByProductId(productId: Int): List<Product> {
         return productRepository.findByProductId(productId)
     }
 
-    fun searchProducts(query: String, page: Int, perPage: Int): PageProductSearchResponse {
-        val pageable = PageRequest.of(page - 1, perPage)
-        val productPage = productRepository.searchProductsByName(query, pageable)
+    fun getFavouriteProducts(productIds: List<Long>): List<FavouriteProduct> {
+        val products = productRepository.findByProductIds(productIds)
 
-        logger.info("Found ${productPage.totalElements} products for query: $query")
+        return products
+            .groupBy { it.productId }  // Ensure productId is Long
+            .map { (productId, productList) ->
+                val minPrice = productList.minOf { it.productPrice }  // Find lowest price
+                val companies = productList
+                    .filter { it.productPrice == minPrice }
+                    .joinToString(", ") { it.company }  // Get company names
 
-        val groupedProducts = productPage.content.groupBy { it.productId }
-            .map { (_, productList) ->
-                val firstProduct = productList.first()
+                val product = productList.first()  // Get details from any product object
 
-                SearchProductResponse(
-                    productId = firstProduct.productId,
-                    productName = firstProduct.productName,
-                    productImgUrl = firstProduct.productImgUrl,
-                    company = productList.map { product ->
-                        SearchCompanyDto(
-                            name = product.company,
-                            companyImgUrl = product.companyImgUrl,
-                            productPrice = product.productPrice
-                        )
-                    },
-                    productCategory = firstProduct.productCategory
+                FavouriteProduct(
+                    productId = productId,
+                    productName = product.productName,
+                    productImgUrl = product.productImgUrl,
+                    company = companies,
+                    productPrice = minPrice
                 )
             }
-
-        return PageProductSearchResponse(
-            page = page,
-            perPage = perPage,
-            totalPages = productPage.totalPages,
-            totalElements = productPage.totalElements,
-            data = groupedProducts
-        )
     }
 
 
