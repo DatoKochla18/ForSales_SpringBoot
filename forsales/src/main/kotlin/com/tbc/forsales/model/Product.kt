@@ -1,6 +1,7 @@
 package com.tbc.forsales.model
 
 import jakarta.persistence.*
+import org.hibernate.annotations.Nationalized
 
 @Entity
 @Table(name = "tbc_products")
@@ -12,7 +13,8 @@ data class Product(
     @Column(name = "product_id")
     val productId: Long,
 
-    @Column(name = "product_name")
+    @Nationalized  // Ensure Unicode is supported
+    @Column(name = "product_name", columnDefinition = "NVARCHAR(255)")
     val productName: String,
 
     @Column(name = "product_img_url")

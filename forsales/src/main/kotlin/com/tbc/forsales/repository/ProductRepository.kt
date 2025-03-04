@@ -10,24 +10,23 @@ import org.springframework.data.repository.query.Param
 interface ProductRepository : JpaRepository<Product, Long> {
 
     @Query(
-        """
-    SELECT p FROM Product p 
-    WHERE p.productPrice = (
-        SELECT MIN(p2.productPrice) 
-        FROM Product p2 
-        WHERE p2.productId = p.productId 
-        AND (:category IS NULL OR p2.productCategory = :category)
-        AND (:search IS NULL OR p2.productName LIKE CONCAT('%', :search, '%'))
-    )
-    ORDER BY RAND()
-    """
+        value = """
+        SELECT * FROM tbc_products p 
+        WHERE p.product_price = (
+            SELECT MIN(p2.product_price) 
+            FROM tbc_products p2 
+            WHERE p2.product_id = p.product_id 
+              AND (:category IS NULL OR p2.product_category = :category)
+              AND (:search IS NULL OR p2.product_name LIKE CONCAT(N'%', :search, N'%'))
+        )
+    """,
+        nativeQuery = true
     )
     fun findLowestPricedProducts(
         @Param("category") category: String?,
         @Param("search") search: String?,
         pageable: Pageable
     ): Page<Product>
-
 
     fun findByProductId(productId: Int): List<Product>
 
